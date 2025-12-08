@@ -16,8 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
 
-  const effectRan = useRef(false);
-
   // AUTH CHECK
 
   const checkAuth = async () => {
@@ -92,11 +90,11 @@ export const AuthProvider = ({ children }) => {
     const newsocket = io(backendUrl, {
       query: { userId: userData._id },
       withCredentials: true,
+      transports: ["websocket"]
     });
 
-    newsocket.connect();
     setSocket(newsocket);
-    newsocket.on("getonlineusers", (userIds) => {
+    newsocket.on("getOnlineUsers", (userIds) => {
       setOnlineUsers(userIds);
     });
   };

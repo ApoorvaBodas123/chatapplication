@@ -14,14 +14,14 @@ export const getUsersForSidebar=async(req,res)=>{
          const unseenMessages={};
 
          const promises=filteredUsers.map(async(user)=>{
-           const messages=await Message.find({senderId:user._id,reciverId:userId,seen:false})
+           const messages=await Message.find({senderId:user._id,receiverId:userId,seen:false})
            if(messages.length>0)
            {
               unseenMessages[user._id]=messages.length;
            }
          })
          await Promise.all(promises);
-         res.json({success:false,users:filteredUsers,unseenMessages})
+         res.json({success:true,users:filteredUsers,unseenMessages})
     }
     catch(error)
     {
@@ -32,27 +32,27 @@ export const getUsersForSidebar=async(req,res)=>{
 
 //get all messages for selected users
 
-export const getmessages=async(req,res)=>
+export const getMessages=async(req,res)=>
 {
     try{
        const {id:selectedUserId}=req.params;
        const myId=req.user._id;
 
        const messages=await Message.find({
-        $or:[{senderId:myId,reciverId:selectedUserId},{senderId:selectedUserId,reciverId:myId}]
+        $or:[{senderId:myId,receiverId:selectedUserId},{senderId:selectedUserId,receiverId:myId}]
        });
-       await Message.updateMany({senderId:selectedUserId,reciverId:myId},{seend:true});
+       await Message.updateMany({senderId:selectedUserId,receiverId:myId},{seen:true});
        res.json({success:true,messages})
     }
     catch(error)
     {
       console.log(error.message);
-      res.json({success:false,message:filteredUsers,unseenmessages})
+      res.json({success:false,message:error.message})
     }
 }
 //api to mark message as seen using message id
 
-export const markmessagesasseen=async (req,res)=>
+export const markMessagesAsSeen=async (req,res)=>
 {
     try
     {
@@ -67,27 +67,25 @@ export const markmessagesasseen=async (req,res)=>
     }
 }
 //send message to selected user
-export const sendmessage=async(req,res)=>{
+export const sendMessage=async(req,res)=>{
   try{
       const {text,image}=req.body;
-      const myId=req.user._id;
-      const selectedUserId=req.params.id;
+      const senderId=req.user._id;
+      const receiverId=req.params.id;
       let imageUrl;
       if(image)
       {
         const uploadresponse=await cloudinary.uploader.upload(image);
         imageUrl=uploadresponse.secure_url;
       }
-      const newmessage=await Message.create({myId,selectedUserId,text,image:imageUrl});
+      const newMessage=await Message.create({senderId,receiverId,text,image:imageUrl,seen:false});
       
-      const reciversocketid=userSocketMap(receiverId);
-      if(reciversocketid)
+      const receiversocketid=userSocketMap[receiverId];
+      if(receiversocketid)
       {
-        io.to(reciversocketid).emit("newmessage",newmessage)
+        io.to(receiversocketid).emit("newMessage",newMessage)
       }
-
-      res.json({success:true,message:newmessage});
-      Message.updateOne({senderId:myId,receiverId:selectedUserId},{seen:false});
+      res.json({success:true,message:newMessage});
   }catch(error)
   {
         console.log(error.message);

@@ -9,7 +9,7 @@ export const ChatProvider=({children})=>{
     const [messages,setMessages]=useState([]);
     const [users,setUsers]=useState([]);
     const [selectedUser,setSelectedUser]=useState(null);
-    const [unseenMesssages,setUnseenmesssages]=useState({});
+    const [unseenMessages,setUnseenMessages]=useState({});
      
     const {socket,axios}=useContext(AuthContext);
 
@@ -20,7 +20,7 @@ export const ChatProvider=({children})=>{
           if(data.success)
           {
             setUsers(data.users);
-            setUnseenmesssages(data.unseenmesssages);
+            setUnseenMessages(data.unseenMessages);
          }
        } 
        catch(error)
@@ -63,7 +63,7 @@ export const ChatProvider=({children})=>{
     }
 
     //const subscribe to messages
-    const subscribeToMessages=async()=>{
+    const subscribeToMessages=()=>{
         if(!socket)
         {
             return;
@@ -79,7 +79,7 @@ export const ChatProvider=({children})=>{
             {
                 setUnseenmesssages((prevUnseenMessages)=>(
                     {
-                        ...prevUnseenMessages,[newMessage.sender_id]:prevUnseenMessages[newMessage.senderId] ? prevUnseenMessages[newMessage.senderId]+1 : 1
+                        ...prevUnseenMessages,[newMessage.senderId]:prevUnseenMessages[newMessage.senderId] ? prevUnseenMessages[newMessage.senderId]+1 : 1
                     }
                 ))
             }
@@ -106,9 +106,9 @@ export const ChatProvider=({children})=>{
         getUsers,
         getMessages,
         sendMessage,
-        unseenMesssages,
+        unseenMessages,
         setSelectedUser,
-        setUnseenmesssages
+        setUnseenMessages
     }
 
     return (<ChatContext.Provider value={value}>

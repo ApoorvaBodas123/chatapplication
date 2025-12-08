@@ -10,13 +10,13 @@ const Sidebar = () => {
 
   const { logout ,onlineUsers } = useContext(AuthContext);
 
-  const [input,setInput]=useState(false);
+  const [input,setInput]=useState("");
 
   const navigate = useNavigate();
 
-  const filteredUsers= input ? users.filter((user)=>{
+  const filteredUsers= input ? users.filter((user)=>
     user.fullName.toLowerCase().includes(input.toLowerCase())
-  }) : users;
+  ) : users;
 
   useEffect(()=>{
    getUsers();
@@ -87,14 +87,14 @@ const Sidebar = () => {
       <div className="flex flex-col">
         {filteredUsers.map((user, index) => (
           <div
-            key={user.id}
+            key={user._id}
             onClick={() => {
               setSelectedUser(user);
               setMenuOpen(false);
             }}
             className={`
               relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm
-              ${selectedUser?.id === user.id ? 'bg-[#032130]' : ''} 
+              ${selectedUser?._id === user._id ? 'bg-[#032130]' : ''} 
             `}
           >
             <img
