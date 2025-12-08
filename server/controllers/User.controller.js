@@ -1,13 +1,13 @@
-import cloudinary from "../lib/cloudinary";
-import { generateToken } from "../lib/utils";
-import User from "../models/user.model";
-import bcrypt from 'bcrypt.js'
+import cloudinary from "../lib/cloudinary.js";
+import { generateToken } from "../lib/utils.js";
+import User from "../models/user.model.js";
+import bcrypt from 'bcryptjs'
 //Sign up user
 export const signup=async (req,res)=>{
    const {fullName,email,password,bio}=req.body;
 
    try{
-    if(!fullName,email,password,bio)
+    if(!fullName || !email || !password || !bio)
     {
         return res.json({success:false,message:"missing details"});    
     }
@@ -16,10 +16,11 @@ export const signup=async (req,res)=>{
     {
         return res.json({success:false,message:"Account already exists"});
     }
+    
     const salt=await bcrypt.genSalt(10);
-    const hashedpassword=bcrypt.hash(password,salt);
+    const hashedPassword=await bcrypt.hash(password,salt);
 
-    const newUser=await User.create({fullName,email,password:hashedpassword,bio});
+    const newUser=await User.create({fullName,email,password:hashedPassword,bio});
     const token=generateToken(newUser._id);
 
     res.json({success:true,userData:newUser,token,message:"Account created successfully"})
@@ -37,20 +38,20 @@ export const login=async(req,res)=>
     {
         try{
           const {email,password}=req.body;
-          const user=await User.findOne({email});
+          const userData=await User.findOne({email});
 
-          if(!user)
+          if(!userData)
           {
-            res.json({success:false,message:"User doesnt exists"});
+            return res.json({success:false,message:"User doesnt exists"});
           }
-         const isPasswordCorrect=await bcrypt.compare(password,user.password);
+         const isPasswordCorrect=await bcrypt.compare(password,userData.password);
          if(!isPasswordCorrect)
          {
-             res.json({success:false,message:"Password is incorrect"});
+            return res.json({success:false,message:"Password is incorrect"});
          }
-         const token=generateToken(user._id);
+         const token=generateToken(userData._id);
 
-         res.json({success:true,userData:user,token,message:"Login successfull"});
+         res.json({success:true,userData,token,message:"Login successfull"});
       }
         catch(error)
         {
@@ -71,16 +72,16 @@ export const updateProfile=async(req,res)=>{
     try
     {
        const {profilePic,fullName,bio}=req.body;
-       const userid=req.user._id;
+       const userId=req.user._id;
        let updatedUser;
        if(!profilePic)
        {
-         updatedUser=await User.findByIdAndUpdate(userid,{bio,fullName},{new:true});
+         updatedUser=await User.findByIdAndUpdate(userId,{bio,fullName},{new:true});
        }
        else
        { 
           const upload=await cloudinary.uploader.upload(profilePic);
-          updatedUser=await User.findByIdAndUpdate(userid,{bio,fullName,profilePic:upload.secure_url},{new:true});
+          updatedUser=await User.findByIdAndUpdate(userId,{profilePic:upload.secure_url,bio,fullName},{new:true});
        }
        res.json({success:true,user:updatedUser});
     }
