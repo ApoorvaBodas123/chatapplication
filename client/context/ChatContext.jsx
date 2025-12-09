@@ -49,7 +49,7 @@ export const ChatProvider=({children})=>{
           const {data}=await axios.post(`/api/messages/send/${selectedUser._id}`,messagesData);
           if(data.success)
           {
-        setMessages((prevMessages)=>[...prevMessages,data.newMessage])
+           setMessages((prevMessages)=>[...prevMessages,data.newMessage])
           }
           else
           {
@@ -68,18 +68,18 @@ export const ChatProvider=({children})=>{
         {
             return;
         }
-        socket.on("newMessage",(newMessage)=>{
+        socket.on("newMessage",async(newMessage)=>{
             if(selectedUser && newMessage.senderId === selectedUser._id)
             {
               newMessage.seen=true;
-              setMessages((prevMessages)=>[...prevMessages,data.newMessage]);
-              axios.put(`/api/messages/mark/${newMessage._id}`);
+              setMessages((prevMessages)=>[...prevMessages,newMessage]);
+              await axios.put(`/api/messages/mark/${newMessage._id}`);
             }
             else
             {
-                setUnseenmesssages((prevUnseenMessages)=>(
+                setUnseenMessages((prevUnseenMessages)=>(
                     {
-                        ...prevUnseenMessages,[newMessage.senderId]:prevUnseenMessages[newMessage.senderId] ? prevUnseenMessages[newMessage.senderId]+1 : 1
+           ...prevUnseenMessages,[newMessage.senderId]: prevUnseenMessages[newMessage.senderId] ? prevUnseenMessages[newMessage.senderId]+1 : 1
                     }
                 ))
             }
@@ -103,12 +103,12 @@ export const ChatProvider=({children})=>{
          users,
          selectedUser,
          setMessages,
-        getUsers,
-        getMessages,
-        sendMessage,
-        unseenMessages,
-        setSelectedUser,
-        setUnseenMessages
+         getUsers,
+         getMessages,
+         sendMessage,
+         unseenMessages,
+         setSelectedUser,
+         setUnseenMessages
     }
 
     return (<ChatContext.Provider value={value}>

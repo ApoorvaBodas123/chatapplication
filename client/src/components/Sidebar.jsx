@@ -10,66 +10,40 @@ const Sidebar = () => {
 
   const { logout ,onlineUsers } = useContext(AuthContext);
 
-  const [input,setInput]=useState("");
+  const [input,setInput]=useState(false);
 
   const navigate = useNavigate();
 
   const filteredUsers= input ? users.filter((user)=>
     user.fullName.toLowerCase().includes(input.toLowerCase())
-  ) : users;
+  ) : users ;
 
   useEffect(()=>{
    getUsers();
   },[onlineUsers]);
 
-  const [menuOpen, setMenuOpen] = useState(false);
-
   return (
-    <div
-      className={`bg-[#8185B2]/10 h-full p-5 rounded-r-xl overflow-y-scroll text-white 
-      ${selectedUser ? "max-md:hidden" : ''}`}
-    >
+    <div className={`bg-[#8185B2]/10 h-full p-5 rounded-r-xl overflow-y-scroll text-white ${selectedUser ? "max-md:hidden" : ''}`} >
       {/* TOP SECTION */}
       <div className="pb-5">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <img src={assets.logo_icon} alt="logo" className="max-w-[60px]" />
 
-          {/* Menu */}
-          <div className="relative py-2">
-            <img
-              src={assets.menu_icon}
-              alt="menu"
-              className="max-h-5 cursor-pointer"
-              onClick={() => setMenuOpen(!menuOpen)}
-            />
 
-            {menuOpen && (
-              <div className="absolute top-full right-0 z-20 w-32 p-5 rounded-md bg-[#032130] border border-gray-600 text-gray-100 shadow-lg">
-                <p
-                  onClick={() => {
-                    setMenuOpen(false);
-                    navigate('/profile');
-                  }}
-                  className="cursor-pointer text-sm"
-                >
+          <div className="relative py-2 group">
+            <img src={assets.menu_icon} alt="menu" className="max-h-5 cursor-pointer"/>
+           
+              <div onClick={() => navigate('/profile')} className="absolute top-full right-0 z-20 w-32 p-5 rounded-md bg-[#032130] border border-gray-600 text-gray-100 hidden group-hover:block">
+                <p className="cursor-pointer text-sm">
                   Edit Profile
                 </p>
-
                 <hr className="my-2 border-t border-gray-500" />
-
-                <p
-                  onClick={() => {
-                    setMenuOpen(false);
-                    logout();
-                  }}
-                  className="cursor-pointer text-sm"
-                >
+                <p onClick={() => logout()} className="cursor-pointer text-sm">
                   Logout
                 </p>
               </div>
-            )}
-          </div>
+           </div>
         </div>
 
         {/* Search Bar */}
@@ -86,17 +60,14 @@ const Sidebar = () => {
       {/* USERS LIST */}
       <div className="flex flex-col">
         {filteredUsers.map((user, index) => (
-          <div
-            key={user._id}
-            onClick={() => {
-              setSelectedUser(user);
-              setMenuOpen(false);
-            }}
+          <div  onClick={() => { setSelectedUser(user);
+              setUnseenMessages(prev=>({...prev,[user._id]:0}))
+            }} key={index}
             className={`
               relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm
-              ${selectedUser?._id === user._id ? 'bg-[#032130]' : ''} 
-            `}
-          >
+              ${selectedUser?._id === user._id && 'bg-[#032130]'} 
+            `}>
+
             <img
               src={user?.profilePic || assets.avatar_icon}
               className="w-[35px] aspect-square rounded-full"
