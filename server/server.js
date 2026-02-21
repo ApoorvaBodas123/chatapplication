@@ -15,7 +15,9 @@ const server = http.createServer(app);
 // FIXED: Correct CORS config for Socket.IO
 export const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.NODE_ENV === "production" 
+      ? process.env.FRONTEND_URL 
+      : "http://localhost:5173",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -55,15 +57,16 @@ app.use(
 app.use("/api/status", (req, res) => res.send("Server is live"));
 app.use("/api/auth", userRouter);
 app.use("/api/messages", messageRouter);
-// DB
 
-if(process.env.NODE_ENV !== "production")
-{ 
-   await connectDB();
-   server.listen(PORT, () => {
-   console.log(`Server running on port ${PORT}`);
-  });//local port
-}
+// DB Connection and Server Start
+const startServer = async () => {
+  await connectDB();
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+startServer();
 
 //Export server for Vercel
 export default server;
