@@ -14,7 +14,7 @@ const server = http.createServer(app);
 
 // FIXED: Correct CORS config for Socket.IO
 const allowedOrigins = process.env.NODE_ENV === "production" 
-  ? [process.env.FRONTEND_URL, "https://chat-app-pi-red-46.vercel.app/"]
+  ? ["https://chat-app-pi-red-46.vercel.app"]
   : ["http://localhost:5173"];
 
 export const io = new Server(server, {
