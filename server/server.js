@@ -2,6 +2,7 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import http from "http";
+import mongoose from "mongoose";
 import { connectDB } from "./lib/db.js";
 import userRouter from "./routes/user.routes.js";
 import messageRouter from "./routes/message.route.js";
@@ -56,6 +57,22 @@ app.use(
 
 // Routes
 app.use("/api/status", (req, res) => res.send("Server is live"));
+
+// Add middleware to ensure DB is connected before routes
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB();
+    } catch (error) {
+      return res.status(500).json({ 
+        success: false, 
+        message: "Database connection failed" 
+      });
+    }
+  }
+  next();
+});
+
 app.use("/api/auth", userRouter);
 app.use("/api/messages", messageRouter);
 
