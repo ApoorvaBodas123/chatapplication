@@ -61,8 +61,10 @@ export const AuthProvider = ({ children }) => {
     setOnlineUsers([]);
     axios.defaults.headers.common["token"] = null;
 
+    if (socket) {
+      socket.disconnect();
+    }
     toast.success("Logged out successfully");
-    socket.disconnect();
   };
 
   // UPDATE PROFILE
@@ -85,8 +87,13 @@ export const AuthProvider = ({ children }) => {
   // SOCKET CONNECTION
 
   const connectsocket = (userData) => {
-    if (!userData && socket?.connected) return;
- 
+    if (!userData || !userData._id) return;
+    
+    // Disconnect existing socket if any
+    if (socket?.connected) {
+      socket.disconnect();
+    }
+
     const newsocket = io(backendUrl, {
       query: { userId: userData._id },
       withCredentials: true,
