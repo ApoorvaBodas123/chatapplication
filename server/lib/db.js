@@ -9,7 +9,6 @@ export const connectDB = async ()=>{
      
      await mongoose.connect(process.env.MONGODB_URI, {
         dbName: "chat-app",
-        bufferCommands: false,
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,

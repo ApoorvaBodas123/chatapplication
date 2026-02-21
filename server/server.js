@@ -61,13 +61,22 @@ app.use("/api/messages", messageRouter);
 
 // DB Connection and Server Start
 const startServer = async () => {
-  await connectDB();
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  try {
+    await connectDB();
+    console.log("Database connected successfully");
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
 };
 
-startServer();
+// Don't start server immediately for Vercel
+if (process.env.NODE_ENV !== "production") {
+  startServer();
+}
 
 //Export server for Vercel
 export default server;
