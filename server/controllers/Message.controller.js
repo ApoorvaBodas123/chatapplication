@@ -3,7 +3,6 @@ import User from "../models/user.model.js";
 import cloudinary from '../lib/cloudinary.js'
 import {io,userSocketMap} from '../server.js';
 
-
 //get all users excpet logged in user
 export const getUsersForSidebar=async(req,res)=>{
     try

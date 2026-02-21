@@ -17,7 +17,6 @@ export const AuthProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   // AUTH CHECK
-
   const checkAuth = async () => {
     try {
       const { data } = await axios.get("/api/auth/check");
@@ -57,7 +56,6 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     localStorage.removeItem("token");
    
-
     setToken(null);
     setAuthUser(null);
     setOnlineUsers([]);
@@ -69,19 +67,21 @@ export const AuthProvider = ({ children }) => {
 
   // UPDATE PROFILE
 
-  const updateProfile = async (body) => {
-    try {
+  const updateProfile = async (body) => 
+  {
+    try 
+    {
       const { data } = await axios.put("/api/auth/update-profile", body);
-
-      if (data.success) {
+      if (data.success) 
+      {
         setAuthUser(data.user);
         toast.success("Profile updated successfully");
       }
-    } catch (error) {
+    }catch(error) 
+    {
       toast.error(error.response?.data?.message || error.message);
     }
   };
-
   // SOCKET CONNECTION
 
   const connectsocket = (userData) => {
