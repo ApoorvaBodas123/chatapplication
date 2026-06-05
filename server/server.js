@@ -13,9 +13,8 @@ const PORT = process.env.PORT || 5000;
 const app = express();
 const server = http.createServer(app);
 
-// FIXED: Correct CORS config for Socket.IO
 const allowedOrigins = process.env.NODE_ENV === "production" 
-  ? ["https://chat-app-pi-red-46.vercel.app"]
+  ? [process.env.FRONTEND_URL, /https:\/\/.*\.vercel\.app$/]
   : ["http://localhost:5173"];
 
 export const io = new Server(server, {
@@ -90,10 +89,6 @@ const startServer = async () => {
   }
 };
 
-// Don't start server immediately for Vercel
-if (process.env.NODE_ENV !== "production") {
-  startServer();
-}
+startServer();
 
-//Export server for Vercel
 export default server;

@@ -7,20 +7,20 @@ import {io,userSocketMap} from '../server.js';
 export const getUsersForSidebar=async(req,res)=>{
     try
     {
-         const userId=req.user._id;
-         const filteredUsers=await User.find({_id:{$ne:userId}}).select("-password").maxTimeMS(10000);
+        const userId=req.user._id;
+        const filteredUsers=await User.find({_id:{$ne:userId}}).select("-password").maxTimeMS(10000);
 
-         const unseenMessages={};
+        const unseenMessages={};
 
-         const promises=filteredUsers.map(async(user)=>{
-           const messages=await Message.find({senderId:user._id,receiverId:userId,seen:false}).maxTimeMS(5000);
-           if(messages.length>0)
+        const promises=filteredUsers.map(async(user)=>{
+        const messages=await Message.find({senderId:user._id,receiverId:userId,seen:false}).maxTimeMS(5000);
+        if(messages.length>0)
            {
               unseenMessages[user._id]=messages.length;
            }
-         })
-         await Promise.all(promises);
-         res.json({success:true,users:filteredUsers,unseenMessages})
+        })
+        await Promise.all(promises);
+        res.json({success:true,users:filteredUsers,unseenMessages})
     }
     catch(error)
     {
