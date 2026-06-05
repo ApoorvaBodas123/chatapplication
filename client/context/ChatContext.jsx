@@ -49,7 +49,9 @@ export const ChatProvider=({children})=>{
           const {data}=await axios.post(`/api/messages/send/${selectedUser._id}`,messagesData);
           if(data.success)
           {
-           setMessages((prevMessages)=>[...prevMessages,data.newMessage])
+           if(data.newMessage) {
+             setMessages((prevMessages)=>[...prevMessages,data.newMessage])
+           }
           }
           else
           {
@@ -58,8 +60,9 @@ export const ChatProvider=({children})=>{
         }
         catch(error)
         {
-             toast.error(error.message);
-        }    
+             console.error("Error sending message:", error);
+             toast.error(error.response?.data?.message || error.message || "Failed to send message");
+        }
     }
 
     //const subscribe to messages
@@ -69,19 +72,25 @@ export const ChatProvider=({children})=>{
             return;
         }
         socket.on("newMessage",async(newMessage)=>{
-            if(selectedUser && newMessage.senderId === selectedUser._id)
-            {
-              newMessage.seen=true;
-              setMessages((prevMessages)=>[...prevMessages,newMessage]);
-              await axios.put(`/api/messages/mark/${newMessage._id}`);
-            }
-            else
-            {
-                setUnseenMessages((prevUnseenMessages)=>(
-                    {
-           ...prevUnseenMessages,[newMessage.senderId]: prevUnseenMessages[newMessage.senderId] ? prevUnseenMessages[newMessage.senderId]+1 : 1
-                    }
-                ))
+            try {
+                if(selectedUser && newMessage.senderId === selectedUser._id)
+                {
+                  newMessage.seen=true;
+                  setMessages((prevMessages)=>[...prevMessages,newMessage]);
+                  if(newMessage._id) {
+                    await axios.put(`/api/messages/mark/${newMessage._id}`);
+                  }
+                }
+                else
+                {
+                    setUnseenMessages((prevUnseenMessages)=>(
+                        {
+               ...prevUnseenMessages,[newMessage.senderId]: prevUnseenMessages[newMessage.senderId] ? prevUnseenMessages[newMessage.senderId]+1 : 1
+                        }
+                    ))
+                }
+            } catch (error) {
+                console.error("Error handling new message:", error);
             }
         })
     }
