@@ -79,7 +79,9 @@ export const ChatProvider = ({ children }) => {
       const { data } = await axios.post(endpoint, messagesData);
 
       if (data.success && data.message) {
-        setMessages((prevMessages) => [...prevMessages, data.message]);
+        if (chatType !== "group" || !selectedGroup) {
+          setMessages((prevMessages) => [...prevMessages, data.message]);
+        }
       } else {
         toast.error(data.message);
       }
@@ -189,12 +191,69 @@ export const ChatProvider = ({ children }) => {
         console.error("Error handling group message:", error);
       }
     });
+
+    socket.on("groupCreated", (group) => {
+      setGroups((prevGroups) => {
+        const existingGroup = prevGroups.find((item) => item._id === group._id);
+        if (existingGroup) {
+          return prevGroups.map((item) => item._id === group._id ? group : item);
+        }
+        return [group, ...prevGroups];
+      });
+    });
+
+    socket.on("groupUpdated", (group) => {
+      setGroups((prevGroups) => {
+        const existingGroup = prevGroups.find((item) => item._id === group._id);
+        if (existingGroup) {
+          return prevGroups.map((item) => item._id === group._id ? group : item);
+        }
+        return [group, ...prevGroups];
+      });
+
+      setSelectedGroup((currentGroup) => {
+        if (currentGroup && currentGroup._id === group._id) {
+          return group;
+        }
+        return currentGroup;
+      });
+    });
+
+    socket.on("userUpdated", (updatedUser) => {
+      setUsers((prevUsers) => prevUsers.map((user) => user._id === updatedUser._id ? { ...user, ...updatedUser } : user));
+
+      setGroups((prevGroups) => prevGroups.map((group) => ({
+        ...group,
+        members: group.members?.map((member) => member._id === updatedUser._id ? { ...member, ...updatedUser } : member) || group.members,
+      })));
+
+      setSelectedUser((currentUser) => {
+        if (currentUser && currentUser._id === updatedUser._id) {
+          return { ...currentUser, ...updatedUser };
+        }
+        return currentUser;
+      });
+
+      setSelectedGroup((currentGroup) => {
+        if (!currentGroup) {
+          return currentGroup;
+        }
+
+        return {
+          ...currentGroup,
+          members: currentGroup.members?.map((member) => member._id === updatedUser._id ? { ...member, ...updatedUser } : member) || currentGroup.members,
+        };
+      });
+    });
   };
 
   const unsubscribeFromMessages = () => {
     if (socket) {
       socket.off("newMessage");
       socket.off("newGroupMessage");
+      socket.off("groupCreated");
+      socket.off("groupUpdated");
+      socket.off("userUpdated");
     }
   };
 

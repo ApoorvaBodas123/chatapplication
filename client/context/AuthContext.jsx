@@ -174,9 +174,9 @@ export const AuthProvider = ({ children }) => {
     // Check if user has valid session on mount
     const checkSession = async () => {
       try {
-        await refreshAccessToken();
-        if (accessToken) {
-          checkAuth();
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          await checkAuth();
         }
       } catch (error) {
         console.log("No valid session found");
