@@ -1,96 +1,302 @@
 import Message from "../models/Message.model.js";
 import User from "../models/User.model.js";
+import Group from "../models/Group.model.js";
 import cloudinary from '../lib/cloudinary.js'
-import {io,userSocketMap} from '../server.js';
+import { io, userSocketMap } from '../server.js';
 
-//get all users excpet logged in user
-export const getUsersForSidebar=async(req,res)=>{
-    try
-    {
-        const userId=req.user._id;
-        const filteredUsers=await User.find({_id:{$ne:userId}}).select("-password").maxTimeMS(10000);
+// get all users except logged in user
+export const getUsersForSidebar = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const filteredUsers = await User.find({ _id: { $ne: userId } }).select("-password").maxTimeMS(10000);
 
-        const unseenMessages={};
+        const unseenMessages = {};
 
-        const promises=filteredUsers.map(async(user)=>{
-        const messages=await Message.find({senderId:user._id,receiverId:userId,seen:false}).maxTimeMS(5000);
-        if(messages.length>0)
-           {
-              unseenMessages[user._id]=messages.length;
-           }
-        })
+        const promises = filteredUsers.map(async (user) => {
+            const messages = await Message.find({ senderId: user._id, receiverId: userId, seen: false, chatType: "single" }).maxTimeMS(5000);
+            if (messages.length > 0) {
+                unseenMessages[user._id] = messages.length;
+            }
+        });
+
         await Promise.all(promises);
-        res.json({success:true,users:filteredUsers,unseenMessages})
+        res.json({ success: true, users: filteredUsers, unseenMessages });
+    } catch (error) {
+        console.log("Error in getUsersForSidebar:", error.message);
+        if (error.name === 'MongooseServerSelectionError') {
+            return res.json({ success: false, message: "Database connection error. Please try again." });
+        }
+        res.json({ success: false, message: error.message })
     }
-    catch(error)
-    {
-      console.log("Error in getUsersForSidebar:", error.message);
-      if(error.name === 'MongooseServerSelectionError') {
-        return res.json({success:false,message:"Database connection error. Please try again."});
-      }
-      res.json({success:false,message:error.message})
-    } 
-}
+};
 
-//get all messages for selected users
+export const getGroupsForSidebar = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const groups = await Group.find({ members: userId })
+            .populate('members', '-password')
+            .populate('createdBy', '-password')
+            .sort({ createdAt: -1 });
 
-export const getMessages=async(req,res)=>
-{
-    try{
-       const {id:selectedUserId}=req.params;
-       const myId=req.user._id;
+        const unseenMessages = {};
 
-       const messages=await Message.find({
-        $or:[{senderId:myId,receiverId:selectedUserId},{senderId:selectedUserId,receiverId:myId}]
-       });
-       await Message.updateMany({senderId:selectedUserId,receiverId:myId},{seen:true});
-       res.json({success:true,messages})
-    }
-    catch(error)
-    {
-      console.log(error.message);
-      res.json({success:false,message:error.message})
-    }
-}
-//api to mark message as seen using message id
+        for (const group of groups) {
+            const unreadCount = await Message.countDocuments({
+                groupId: group._id,
+                chatType: 'group',
+                senderId: { $ne: userId },
+                seen: false
+            });
 
-export const markMessagesAsSeen=async (req,res)=>
-{
-    try
-    {
-        const {id}=req.params;
-        await Message.findByIdAndUpdate(id,{seen:true});
-        res.json({success:true});
+            if (unreadCount > 0) {
+                unseenMessages[group._id] = unreadCount;
+            }
+        }
+
+        res.json({ success: true, groups, unseenMessages });
+    } catch (error) {
+        console.log("Error in getGroupsForSidebar:", error.message);
+        res.json({ success: false, message: error.message });
     }
-    catch(error)
-    {
-       console.log(error.message);
-       res.json({success:false,message:error.message});
-    }
-}
-//send message to selected user
-export const sendMessage=async(req,res)=>{
-  try{
-      const {text,image}=req.body;
-      const senderId=req.user._id;
-      const receiverId=req.params.id;
-      let imageUrl;
-      if(image)
-      {
-        const uploadresponse=await cloudinary.uploader.upload(image);
-        imageUrl=uploadresponse.secure_url;
-      }
-      const newMessage=await Message.create({senderId,receiverId,text,image:imageUrl,seen:false});
-      
-      const receiversocketid=userSocketMap[receiverId];
-      if(receiversocketid)
-      {
-        io.to(receiversocketid).emit("newMessage",newMessage)
-      }
-      res.json({success:true,message:newMessage});
-  }catch(error)
-  {
+};
+
+export const createGroup = async (req, res) => {
+    try {
+        const { name, description, members, profilePic } = req.body;
+        const userId = req.user._id;
+
+        if (!name || !name.trim()) {
+            return res.status(400).json({ success: false, message: "Group name is required" });
+        }
+
+        const uniqueMembers = [...new Set([...members, userId])].filter(Boolean);
+
+        const group = await Group.create({
+            name: name.trim(),
+            description: description || "",
+            profilePic: profilePic || "",
+            createdBy: userId,
+            members: uniqueMembers
+        });
+
+        const populatedGroup = await group.populate('members', '-password');
+
+        for (const memberId of uniqueMembers) {
+            const socketId = userSocketMap[memberId.toString()];
+            if (socketId) {
+                io.to(socketId).emit("groupCreated", populatedGroup);
+            }
+        }
+
+        res.json({ success: true, group: populatedGroup });
+    } catch (error) {
         console.log(error.message);
-        res.json({success:false,message:error.message});
-  }
-}
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export const addMembersToGroup = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { memberIds } = req.body;
+        const userId = req.user._id;
+
+        const group = await Group.findById(id);
+        if (!group) {
+            return res.status(404).json({ success: false, message: "Group not found" });
+        }
+
+        if (!group.members.some((member) => member.toString() === userId.toString())) {
+            return res.status(403).json({ success: false, message: "You are not a member of this group" });
+        }
+
+        const uniqueMembers = [...new Set([...group.members.map((m) => m.toString()), ...memberIds])];
+
+        group.members = uniqueMembers;
+        await group.save();
+
+        const populatedGroup = await group.populate('members', '-password');
+
+        for (const memberId of uniqueMembers) {
+            const socketId = userSocketMap[memberId];
+            if (socketId) {
+                io.to(socketId).emit("groupUpdated", populatedGroup);
+            }
+        }
+
+        res.json({ success: true, group: populatedGroup });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export const leaveGroup = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findById(id);
+        if (!group) {
+            return res.status(404).json({ success: false, message: "Group not found" });
+        }
+
+        if (group.createdBy.toString() === userId.toString()) {
+            return res.status(400).json({ success: false, message: "Group creator cannot leave the group" });
+        }
+
+        group.members = group.members.filter((member) => member.toString() !== userId.toString());
+        await group.save();
+
+        const populatedGroup = await group.populate('members', '-password');
+
+        for (const memberId of populatedGroup.members.map((member) => member._id.toString())) {
+            const socketId = userSocketMap[memberId];
+            if (socketId) {
+                io.to(socketId).emit("groupUpdated", populatedGroup);
+            }
+        }
+
+        res.json({ success: true, group: populatedGroup });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export const getMessages = async (req, res) => {
+    try {
+        const { id: selectedUserId } = req.params;
+        const myId = req.user._id;
+
+        const messages = await Message.find({
+            $or: [
+                { senderId: myId, receiverId: selectedUserId, chatType: 'single' },
+                { senderId: selectedUserId, receiverId: myId, chatType: 'single' },
+            ]
+        }).sort({ createdAt: 1 });
+
+        await Message.updateMany({ senderId: selectedUserId, receiverId: myId, chatType: 'single', seen: false }, { seen: true });
+        res.json({ success: true, messages });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export const getGroupMessages = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        const group = await Group.findById(id);
+        if (!group) {
+            return res.status(404).json({ success: false, message: "Group not found" });
+        }
+
+        if (!group.members.some((member) => member.toString() === userId.toString())) {
+            return res.status(403).json({ success: false, message: "You are not a member of this group" });
+        }
+
+        const messages = await Message.find({ groupId: id, chatType: 'group' }).sort({ createdAt: 1 });
+
+        await Message.updateMany({ groupId: id, chatType: 'group', senderId: { $ne: userId }, seen: false }, { seen: true });
+
+        res.json({ success: true, messages, group });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export const markMessagesAsSeen = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Message.findByIdAndUpdate(id, { seen: true });
+        res.json({ success: true });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export const sendMessage = async (req, res) => {
+    try {
+        const { text, image } = req.body;
+        const senderId = req.user._id;
+        const receiverId = req.params.id;
+        let imageUrl;
+
+        if (image) {
+            const uploadresponse = await cloudinary.uploader.upload(image);
+            imageUrl = uploadresponse.secure_url;
+        }
+
+        const newMessage = await Message.create({
+            senderId,
+            receiverId,
+            chatType: 'single',
+            text,
+            image: imageUrl,
+            seen: false
+        });
+
+        const receiverSocketId = userSocketMap[receiverId.toString()];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit("newMessage", newMessage);
+        }
+
+        res.json({ success: true, message: newMessage });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export const sendGroupMessage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { text, image } = req.body;
+        const senderId = req.user._id;
+        let imageUrl;
+
+        if (image) {
+            const uploadresponse = await cloudinary.uploader.upload(image);
+            imageUrl = uploadresponse.secure_url;
+        }
+
+        const group = await Group.findById(id);
+        if (!group) {
+            return res.status(404).json({ success: false, message: "Group not found" });
+        }
+
+        const messagePayload = {
+            senderId,
+            groupId: id,
+            chatType: 'group',
+            text,
+            image: imageUrl,
+            seen: false
+        };
+
+        const newMessage = await Message.create(messagePayload);
+
+        const members = group.members.map((member) => member.toString());
+
+        for (const member of members) {
+            const socketId = userSocketMap[member];
+            if (socketId) {
+                io.to(socketId).emit("newGroupMessage", {
+                    ...newMessage.toObject(),
+                    groupId: id,
+                    groupName: group.name
+                });
+            }
+        }
+
+        res.json({ success: true, message: newMessage });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+};

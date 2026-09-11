@@ -1,14 +1,15 @@
 # Chat Application
 
-A real-time chat application built with React (Vite) and Node.js/Express.
+A real-time chat application built with React (Vite) and Node.js/Express, packaged as a Dockerized monolith for deployment on Render.
 
 ## Features
 
-- Real-time messaging
-- User authentication (JWT)
-- Image/file sharing (Cloudinary integration)
-- Responsive design
-- Modern UI/UX
+- Real-time messaging with Socket.IO
+- User authentication with JWT
+- Profile updates and session management
+- Image/file upload support through Cloudinary
+- Responsive React UI
+- Dockerized production deployment
 
 ## Tech Stack
 
@@ -17,105 +18,151 @@ A real-time chat application built with React (Vite) and Node.js/Express.
 - Vite
 - React Router
 - Context API for state management
-- Axios for API calls
+- Axios
+- Socket.IO client
 
 ### Backend
 - Node.js
 - Express.js
-- JWT for authentication
-- MongoDB (Mongoose)
-- Cloudinary for file storage
-- Bcrypt for password hashing
+- MongoDB with Mongoose
+- JWT authentication
+- Cloudinary integration
+- Socket.IO server
 
-## Getting Started
+## Project Architecture
 
-### Prerequisites
-- Node.js (v16+)
-- npm or yarn
-- MongoDB Atlas or local MongoDB instance
+This project uses a single deployment unit:
 
-### Installation
+- Frontend is built with Vite
+- Built static files are copied into the Express server
+- Express serves the frontend and also exposes the API
+- MongoDB, Cloudinary, and JWT secrets are loaded from environment variables
 
-1. Clone the repository:
-   ```bash
-   git clone <your-repo-url>
-   cd chatapplication
-   ```
+That means the app can be deployed as one Docker service on Render.
 
-2. Install dependencies for both client and server:
-   ```bash
-   # Install server dependencies
-   cd server
-   npm install
+## Prerequisites
 
-   # Install client dependencies
-   cd ../client
-   npm install
-   ```
+- Node.js 20+
+- npm
+- Docker (for local container builds)
+- MongoDB Atlas or another MongoDB instance
+- Cloudinary account
 
-3. Set up environment variables:
+## Local Development
 
-   Create a `.env` file in both `client` and `server` directories with the required variables.
+### 1. Install dependencies
 
-   Server (`.env`):
-   ```
-   PORT=5000
-   MONGODB_URI=your_mongodb_uri
-   JWT_SECRET=your_jwt_secret
-   CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-   CLOUDINARY_API_KEY=your_cloudinary_api_key
-   CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-   ```
+```bash
+cd client && npm install
+cd ../server && npm install
+```
 
-   Client (`.env`):
-   ```
-   VITE_API_URL=http://localhost:5000
-   ```
+### 2. Create environment files
 
-4. Start the development servers:
+Create a `.env` file in the `server` folder:
 
-   In the server directory:
-   ```bash
-   npm run server
-   ```
+```env
+PORT=5000
+NODE_ENV=development
+MONGODB_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+FRONTEND_URL=http://localhost:5173
+```
 
-   In the client directory:
-   ```bash
-   npm run dev
-   ```
+Create a `.env` file in the `client` folder:
 
-5. Open [http://localhost:5173](http://localhost:5173) to view it in your browser.
+```env
+VITE_BACKEND_URL=http://localhost:5000
+```
+
+### 3. Run the app locally
+
+Start the backend:
+
+```bash
+cd server
+npm run server
+```
+
+Start the frontend:
+
+```bash
+cd client
+npm run dev
+```
+
+Open `http://localhost:5173` in the browser.
+
+## Docker / Production Build
+
+### Build locally with Docker
+
+```bash
+docker compose up --build
+```
+
+The app will run on port `5000`.
+
+## Render Deployment
+
+### Recommended setup
+
+Deploy this repository as a single Dockerized web service on Render.
+
+### Required environment variables on Render
+
+```env
+PORT=5000
+NODE_ENV=production
+MONGODB_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+FRONTEND_URL=https://your-render-service-url.onrender.com
+```
+
+Important:
+- `FRONTEND_URL` should be the public origin of the app, not `/login`
+- If the frontend stays on Vercel and only the backend is on Render, set `FRONTEND_URL` to the Vercel domain instead
 
 ## Project Structure
 
-```
+```text
 chatapplication/
-├── client/                 # Frontend React application
-│   ├── src/                # Source files
-│   ├── public/             # Static files
-│   └── package.json        # Frontend dependencies
+├── client/                 # React frontend
+│   ├── src/                # UI source code
+│   ├── public/             # Static assets
+│   ├── context/            # Auth and chat context
+│   ├── package.json        # Frontend dependencies
+│   └── .env                # Local frontend env
 │
-├── server/                 # Backend server
-│   ├── controllers/        # Route controllers
-│   ├── models/             # Database models
+├── server/                 # Express backend
+│   ├── controllers/        # API controllers
+│   ├── models/             # Mongoose models
 │   ├── routes/             # API routes
-│   ├── middleware/         # Custom middleware
-│   ├── lib/                # Utility functions
-│   └── server.js           # Server entry point
+│   ├── middleware/        # Auth middleware
+│   ├── lib/               # DB and utility code
+│   ├── package.json       # Backend dependencies
+│   ├── .env               # Local backend env
+│   └── server.js          # Express entry point
 │
-└── README.md               # Project documentation
+├── Dockerfile             # Docker build for production
+├── docker-compose.yaml    # Local container configuration
+├── .dockerignore          # Files excluded from Docker build context
+├── .gitignore            # Root Git ignore file
+├── README.md              # Project documentation
+└── .env.example           # Optional example env file (if added later)
 ```
-
-## Environment Setup
-
-1. Create a MongoDB database using [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) or install MongoDB locally.
-2. Create a Cloudinary account and get your API credentials.
 
 ## Available Scripts
 
 ### Client
 - `npm run dev` - Start development server
-- `npm run build` - Build for production
+- `npm run build` - Build production frontend
 - `npm run lint` - Run ESLint
 
 ### Server
@@ -132,4 +179,4 @@ chatapplication/
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.

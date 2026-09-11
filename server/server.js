@@ -8,7 +8,8 @@ import { connectDB } from "./lib/db.js";
 import userRouter from "./routes/user.routes.js";
 import messageRouter from "./routes/message.route.js";
 import { Server } from "socket.io";
-import path from "path"
+import path from "path";
+import Group from "./models/Group.model.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -42,12 +43,21 @@ export const io = new Server(server, {
 // Online users map
 export const userSocketMap = {};
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   const userId = socket.handshake.query.userId;
   console.log("User connected:", userId);
 
   if (userId) {
     userSocketMap[userId] = socket.id;
+
+    try {
+      const groups = await Group.find({ members: userId });
+      groups.forEach((group) => {
+        socket.join(`group:${group._id.toString()}`);
+      });
+    } catch (error) {
+      console.error("Error joining user groups:", error.message);
+    }
   }
 
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
