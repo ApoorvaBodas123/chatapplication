@@ -43,7 +43,7 @@ const RightSideBar = () => {
   };
 
   return activeChat && (
-    <div className={`bg-[#8185B2]/7 text-white w-full h-full flex flex-col ${activeChat ? "max-md:hidden" : ""}`}>
+    <div className={`bg-[#1d2d3f]/80 text-white w-full h-full flex flex-col border-l border-white/10 ${activeChat ? "max-md:hidden" : ""}`}>
       <div className='flex-1 overflow-y-auto px-5 pb-28'>
         <div className='pt-16 flex flex-col items-center gap-2 text-xs mx-auto'>
           <img src={activeChat?.profilePic || assets.avatar_icon} alt="" className='w-20 aspect-[1/1] rounded-full' />

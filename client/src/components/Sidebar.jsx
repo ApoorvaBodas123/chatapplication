@@ -58,7 +58,7 @@ const Sidebar = () => {
   }, [onlineUsers]);
 
   return (
-    <div className={`bg-[#8185B2]/10 h-full p-5 rounded-r-xl overflow-y-scroll text-white ${selectedUser || selectedGroup ? "max-md:hidden" : ''}`} >
+    <div className={`bg-[#1d2d3f]/80 h-full p-5 border-r border-white/10 overflow-y-scroll text-white ${selectedUser || selectedGroup ? "max-md:hidden" : ''}`} >
       <div className="pb-5">
         <div className="flex justify-between items-center">
           <img src={assets.logo_icon} alt="logo" className="max-w-[60px]" />
