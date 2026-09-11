@@ -1,15 +1,18 @@
 # Chat Application
 
-A real-time chat application built with React (Vite) and Node.js/Express, packaged as a Dockerized monolith for deployment on Render.
+A real-time chat application built with React, Vite, Node.js, Express, MongoDB, and Socket.IO. The app supports both direct one-to-one chat and group chat rooms, and is packaged as a Dockerized monolith for deployment on Render.
 
 ## Features
 
 - Real-time messaging with Socket.IO
+- Single chat and group chat support
+- Group creation, member addition, and leaving groups
 - User authentication with JWT
+- Online/offline user status
 - Profile updates and session management
-- Image/file upload support through Cloudinary
+- Image upload support through Cloudinary
 - Responsive React UI
-- Dockerized production deployment
+- Dockerized production deployment on Render
 
 ## Tech Stack
 
@@ -20,6 +23,7 @@ A real-time chat application built with React (Vite) and Node.js/Express, packag
 - Context API for state management
 - Axios
 - Socket.IO client
+- Tailwind CSS
 
 ### Backend
 - Node.js
@@ -33,12 +37,13 @@ A real-time chat application built with React (Vite) and Node.js/Express, packag
 
 This project uses a single deployment unit:
 
-- Frontend is built with Vite
+- The React frontend is built with Vite
 - Built static files are copied into the Express server
 - Express serves the frontend and also exposes the API
+- Socket.IO runs from the same Express server
 - MongoDB, Cloudinary, and JWT secrets are loaded from environment variables
 
-That means the app can be deployed as one Docker service on Render.
+This makes the app easy to deploy as one Docker service on Render.
 
 ## Prerequisites
 
@@ -104,7 +109,7 @@ Open `http://localhost:5173` in the browser.
 docker compose up --build
 ```
 
-The app will run on port `5000`.
+The app will run on port `5000` in the container.
 
 ## Render Deployment
 
@@ -125,49 +130,61 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 FRONTEND_URL=https://your-render-service-url.onrender.com
 ```
 
-Important:
-- `FRONTEND_URL` should be the public origin of the app, not `/login`
-- If the frontend stays on Vercel and only the backend is on Render, set `FRONTEND_URL` to the Vercel domain instead
+Important notes:
+- `FRONTEND_URL` should be the public origin of the app, not a path like `/login`
+- If the frontend is hosted on Vercel and only the backend is on Render, set `FRONTEND_URL` to the frontend domain instead
+- The root `.gitignore` is already configured to ignore env files, `.DS_Store`, and build artifacts
+
+## Group Chat Notes
+
+The current application includes a group chat flow:
+
+- Create a new group from the sidebar
+- Open group conversations from the group tab
+- Add members to an existing group
+- Leave a group from the right sidebar
+- Group messages are broadcast to members in real time using Socket.IO rooms
 
 ## Project Structure
 
 ```text
 chatapplication/
-├── client/                 # React frontend
-│   ├── src/                # UI source code
-│   ├── public/             # Static assets
-│   ├── context/            # Auth and chat context
-│   ├── package.json        # Frontend dependencies
-│   └── .env                # Local frontend env
+├── client/                   # React frontend
+│   ├── src/                  # UI source code
+│   ├── public/               # Static assets
+│   ├── context/              # Auth and chat context
+│   ├── package.json          # Frontend dependencies
+│   └── .env                  # Local frontend env
 │
-├── server/                 # Express backend
-│   ├── controllers/        # API controllers
-│   ├── models/             # Mongoose models
-│   ├── routes/             # API routes
-│   ├── middleware/        # Auth middleware
-│   ├── lib/               # DB and utility code
-│   ├── package.json       # Backend dependencies
-│   ├── .env               # Local backend env
-│   └── server.js          # Express entry point
+├── server/                   # Express backend
+│   ├── controllers/          # API controllers
+│   ├── models/               # Mongoose models
+│   ├── routes/               # API routes
+│   ├── middleware/           # Auth middleware
+│   ├── lib/                  # DB and utility code
+│   ├── package.json          # Backend dependencies
+│   ├── .env                  # Local backend env
+│   └── server.js             # Express entry point
 │
-├── Dockerfile             # Docker build for production
-├── docker-compose.yaml    # Local container configuration
-├── .dockerignore          # Files excluded from Docker build context
-├── .gitignore            # Root Git ignore file
-├── README.md              # Project documentation
-└── .env.example           # Optional example env file (if added later)
+├── Dockerfile                # Docker build for production
+├── docker-compose.yaml       # Local container configuration
+├── .dockerignore             # Files excluded from Docker build context
+├── .gitignore                # Root Git ignore file
+├── README.md                 # Project documentation
+├── .DS_Store                 # Ignored OS metadata file
+└── .env.example              # Optional example env file
 ```
 
 ## Available Scripts
 
 ### Client
-- `npm run dev` - Start development server
-- `npm run build` - Build production frontend
+- `npm run dev` - Start the React development server
+- `npm run build` - Build the production frontend
 - `npm run lint` - Run ESLint
 
 ### Server
-- `npm run server` - Start development server with nodemon
-- `npm start` - Start production server
+- `npm run server` - Start the backend with nodemon
+- `npm start` - Start the production server
 
 ## Contributing
 
