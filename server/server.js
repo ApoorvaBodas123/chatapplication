@@ -62,6 +62,54 @@ io.on("connection", async (socket) => {
 
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
+  socket.on("typing", ({ chatType, conversationId }) => {
+    if (!userId || !conversationId) return;
+
+    if (chatType === "single") {
+      const receiverSocketId = userSocketMap[conversationId.toString()];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("typing", {
+          senderId: userId,
+          chatType,
+          conversationId: userId,
+        });
+      }
+      return;
+    }
+
+    if (chatType === "group") {
+      io.to(`group:${conversationId.toString()}`).emit("typing", {
+        senderId: userId,
+        chatType,
+        conversationId,
+      });
+    }
+  });
+
+  socket.on("stopTyping", ({ chatType, conversationId }) => {
+    if (!userId || !conversationId) return;
+
+    if (chatType === "single") {
+      const receiverSocketId = userSocketMap[conversationId.toString()];
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("stopTyping", {
+          senderId: userId,
+          chatType,
+          conversationId: userId,
+        });
+      }
+      return;
+    }
+
+    if (chatType === "group") {
+      io.to(`group:${conversationId.toString()}`).emit("stopTyping", {
+        senderId: userId,
+        chatType,
+        conversationId,
+      });
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log("User disconnected:", userId);
     delete userSocketMap[userId];

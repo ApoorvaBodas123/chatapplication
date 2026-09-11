@@ -4,6 +4,96 @@ import Group from "../models/Group.model.js";
 import cloudinary from '../lib/cloudinary.js'
 import { io, userSocketMap } from '../server.js';
 
+const buildLocalAiReply = (prompt, messages = []) => {
+    const trimmedPrompt = prompt?.trim();
+
+    if (!trimmedPrompt) {
+        return "Please provide a question or prompt for the AI assistant.";
+    }
+
+    const recentTopics = messages
+        .slice(-6)
+        .map((message) => (message.text || '').trim())
+        .filter(Boolean)
+        .slice(0, 3);
+
+    const topicText = recentTopics.length
+        ? `Recent chat context includes: ${recentTopics.join(' | ')}`
+        : 'There is no recent message history available.';
+
+    const promptLower = trimmedPrompt.toLowerCase();
+
+    if (promptLower.includes('summary') || promptLower.includes('summarize')) {
+        return `Here is a quick summary: this conversation has recent activity around ${recentTopics.length ? recentTopics.join(', ') : 'your current discussion'} and the main goal is to keep the chat productive and organized.`;
+    }
+
+    return `AI assistant reply: ${trimmedPrompt}. ${topicText} I can help you with follow-up questions, clarifications, or next steps in this conversation.`;
+};
+
+const buildLocalSummary = (messages = []) => {
+    const cleanMessages = messages
+        .map((message) => (message.text || '').trim())
+        .filter(Boolean)
+        .slice(-20);
+
+    if (!cleanMessages.length) {
+        return 'No messages available to summarize yet.';
+    }
+
+    const summarySentence = cleanMessages
+        .slice(0, 4)
+        .map((message) => message.length > 90 ? `${message.slice(0, 90)}...` : message)
+        .join(' • ');
+
+    return `Chat summary: ${summarySentence}`;
+};
+
+const getGeminiReply = async (prompt, messages = []) => {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+        return null;
+    }
+
+    try {
+        const contents = [
+            {
+                role: 'user',
+                parts: [{ text: 'You are a helpful chat assistant helping with messaging app conversations.' }]
+            },
+            ...messages.slice(-10).map((message) => ({
+                role: message.senderId ? 'user' : 'model',
+                parts: [{ text: message.text || '[media message]' }]
+            })),
+            {
+                role: 'user',
+                parts: [{ text: prompt }]
+            }
+        ];
+
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ contents }),
+            }
+        );
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    } catch (error) {
+        console.error('Gemini request failed:', error.message);
+        return null;
+    }
+};
+
 // get all users except logged in user
 export const getUsersForSidebar = async (req, res) => {
     try {
@@ -176,7 +266,26 @@ export const getMessages = async (req, res) => {
             ]
         }).sort({ createdAt: 1 });
 
-        await Message.updateMany({ senderId: selectedUserId, receiverId: myId, chatType: 'single', seen: false }, { seen: true });
+        const incomingMessages = messages.filter(
+            (message) => message.senderId.toString() === selectedUserId.toString() && message.receiverId.toString() === myId.toString()
+        );
+
+        await Message.updateMany(
+            { senderId: selectedUserId, receiverId: myId, chatType: 'single', seen: false },
+            { seen: true }
+        );
+
+        for (const message of incomingMessages) {
+            const senderSocketId = userSocketMap[message.senderId.toString()];
+            if (senderSocketId) {
+                io.to(senderSocketId).emit("messageSeen", {
+                    messageId: message._id.toString(),
+                    receiverId: myId.toString(),
+                    senderId: selectedUserId.toString(),
+                });
+            }
+        }
+
         res.json({ success: true, messages });
     } catch (error) {
         console.log(error.message);
@@ -200,7 +309,27 @@ export const getGroupMessages = async (req, res) => {
 
         const messages = await Message.find({ groupId: id, chatType: 'group' }).sort({ createdAt: 1 });
 
+        const incomingGroupMessages = messages.filter(
+            (message) => message.senderId.toString() !== userId.toString() && message.seen === false
+        );
+
         await Message.updateMany({ groupId: id, chatType: 'group', senderId: { $ne: userId }, seen: false }, { seen: true });
+
+        const senderIds = [...new Set(incomingGroupMessages.map((message) => message.senderId.toString()))];
+
+        for (const senderId of senderIds) {
+            const senderSocketId = userSocketMap[senderId];
+            if (senderSocketId) {
+                io.to(senderSocketId).emit("messageSeen", {
+                    groupId: id,
+                    receiverId: userId.toString(),
+                    senderId,
+                    messageIds: incomingGroupMessages
+                        .filter((message) => message.senderId.toString() === senderId)
+                        .map((message) => message._id.toString()),
+                });
+            }
+        }
 
         res.json({ success: true, messages, group });
     } catch (error) {
@@ -214,6 +343,55 @@ export const markMessagesAsSeen = async (req, res) => {
         const { id } = req.params;
         await Message.findByIdAndUpdate(id, { seen: true });
         res.json({ success: true });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export const askAiAssistant = async (req, res) => {
+    try {
+        const { prompt, messages = [] } = req.body;
+
+        if (!prompt || !prompt.trim()) {
+            return res.status(400).json({ success: false, message: 'Prompt is required' });
+        }
+
+        let aiReply = await getGeminiReply(prompt, messages);
+
+        if (!aiReply) {
+            aiReply = buildLocalAiReply(prompt, messages);
+        }
+
+        res.json({ success: true, reply: aiReply });
+    } catch (error) {
+        console.log(error.message);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+export const summarizeChat = async (req, res) => {
+    try {
+        const { messages = [] } = req.body;
+
+        const cleanMessages = messages
+            .filter((message) => (message.text || '').trim())
+            .slice(-50);
+
+        let summary = buildLocalSummary(cleanMessages);
+
+        if (process.env.GEMINI_API_KEY) {
+            const geminiSummary = await getGeminiReply(
+                'Summarize this chat in 2-3 concise sentences.',
+                cleanMessages
+            );
+
+            if (geminiSummary) {
+                summary = geminiSummary;
+            }
+        }
+
+        res.json({ success: true, summary });
     } catch (error) {
         console.log(error.message);
         res.json({ success: false, message: error.message });

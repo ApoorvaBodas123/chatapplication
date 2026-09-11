@@ -1,28 +1,59 @@
 # Chat Application
 
-A real-time chat application built with React, Vite, Node.js, Express, MongoDB, and Socket.IO. The app supports both direct one-to-one chat and group chat rooms, and is packaged as a Dockerized monolith for deployment on Render.
+A full-stack real-time chat application built with React, Vite, Node.js, Express, MongoDB, Socket.IO, and Gemini-powered AI features. This project is designed to feel like a modern messaging platform with polished UX, real-time collaboration, and a production-ready architecture.
 
-## Features
+## Overview
 
-- Real-time messaging with Socket.IO
-- Single chat and group chat support
-- Group creation, member addition, and leaving groups
-- User authentication with JWT
-- Online/offline user status
-- Profile updates and session management
+This application enables users to:
+
+- Chat one-on-one with other users
+- Create and manage group conversations
+- See online/offline presence in real time
+- Send messages and images instantly
+- Track typing indicators and read receipts
+- Update profiles and usernames live for online users
+- Use an AI assistant for help inside the chat
+- Generate concise chat summaries
+
+## Why this project stands out
+
+- Real-time communication built with Socket.IO
+- Modern dark dashboard-style UI
+- Group management workflows including add-member and leave-group actions
+- Profile and session handling improvements for a smoother user experience
+- AI features integrated into the chat flow using Gemini
+- Clean monorepo structure ready for deployment and portfolio presentation
+
+## Key Features
+
+### Real-time Messaging
+- Instant one-to-one chat
+- Group chat support with live broadcasting
+- Online user presence tracking
+- Typing indicators
+- Read receipts for delivered/seen states
+
+### User Experience
+- Login, signup, and authenticated session flow
+- Profile updates with immediate UI refresh for online users
+- Responsive dashboard layout
 - Image upload support through Cloudinary
-- Responsive React UI
-- Dockerized production deployment on Render
+
+### AI Enhancements
+- AI assistant for contextual replies
+- Chat summarization support
+- Gemini integration with graceful local fallback when no API key is configured
 
 ## Tech Stack
 
 ### Frontend
-- React.js
+- React 19
 - Vite
+- JavaScript
 - React Router
-- Context API for state management
+- Context API
 - Axios
-- Socket.IO client
+- Socket.IO Client
 - Tailwind CSS
 
 ### Backend
@@ -30,30 +61,28 @@ A real-time chat application built with React, Vite, Node.js, Express, MongoDB, 
 - Express.js
 - MongoDB with Mongoose
 - JWT authentication
-- Cloudinary integration
-- Socket.IO server
+- Socket.IO Server
+- Cloudinary
+- Gemini API integration
 
 ## Project Architecture
 
-This project uses a single deployment unit:
+This project uses a monorepo structure:
 
-- The React frontend is built with Vite
-- Built static files are copied into the Express server
-- Express serves the frontend and also exposes the API
-- Socket.IO runs from the same Express server
-- MongoDB, Cloudinary, and JWT secrets are loaded from environment variables
+- `client/` contains the React frontend
+- `server/` contains the Express API, Socket.IO server, and MongoDB models
+- The backend serves the built frontend in production
+- Docker configuration is included for easy deployment
 
-This makes the app easy to deploy as one Docker service on Render.
+## Local Setup
 
-## Prerequisites
+### Prerequisites
 
 - Node.js 20+
 - npm
-- Docker (for local container builds)
 - MongoDB Atlas or another MongoDB instance
 - Cloudinary account
-
-## Local Development
+- Gemini API key (optional for AI features)
 
 ### 1. Install dependencies
 
@@ -62,28 +91,28 @@ cd client && npm install
 cd ../server && npm install
 ```
 
-### 2. Create environment files
+### 2. Configure environment variables
 
-Create a `.env` file in the `server` folder:
+Create a `.env` file inside `server/`:
 
 ```env
 PORT=5000
-NODE_ENV=development
-MONGODB_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
+MONGODB_URI=your_mongodb_uri
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 FRONTEND_URL=http://localhost:5173
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
-Create a `.env` file in the `client` folder:
+Create a `.env` file inside `client/`:
 
 ```env
 VITE_BACKEND_URL=http://localhost:5000
 ```
 
-### 3. Run the app locally
+### 3. Run the application
 
 Start the backend:
 
@@ -99,100 +128,78 @@ cd client
 npm run dev
 ```
 
-Open `http://localhost:5173` in the browser.
+Then open:
 
-## Docker / Production Build
+```text
+http://localhost:5173
+```
 
-### Build locally with Docker
+## Docker Setup
+
+To run the full project with Docker:
 
 ```bash
 docker compose up --build
 ```
 
-The app will run on port `5000` in the container.
+The app will be available on port `5000`.
 
-## Render Deployment
+## Deployment
 
-### Recommended setup
+This project is structured to be deployed as a single Dockerized service, making it suitable for platforms such as Render or similar hosting providers.
 
-Deploy this repository as a single Dockerized web service on Render.
+### Recommended deployment steps
 
-### Required environment variables on Render
-
-```env
-PORT=5000
-NODE_ENV=production
-MONGODB_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-FRONTEND_URL=https://your-render-service-url.onrender.com
-```
-
-Important notes:
-- `FRONTEND_URL` should be the public origin of the app, not a path like `/login`
-- If the frontend is hosted on Vercel and only the backend is on Render, set `FRONTEND_URL` to the frontend domain instead
-- The root `.gitignore` is already configured to ignore env files, `.DS_Store`, and build artifacts
-
-## Group Chat Notes
-
-The current application includes a group chat flow:
-
-- Create a new group from the sidebar
-- Open group conversations from the group tab
-- Add members to an existing group
-- Leave a group from the right sidebar
-- Group messages are broadcast to members in real time using Socket.IO rooms
+1. Push the repository to GitHub
+2. Create a Dockerized web service on Render
+3. Add the environment variables listed above
+4. Deploy and verify the app
 
 ## Project Structure
 
 ```text
 chatapplication/
-├── client/                   # React frontend
-│   ├── src/                  # UI source code
-│   ├── public/               # Static assets
-│   ├── context/              # Auth and chat context
-│   ├── package.json          # Frontend dependencies
-│   └── .env                  # Local frontend env
-│
-├── server/                   # Express backend
-│   ├── controllers/          # API controllers
-│   ├── models/               # Mongoose models
-│   ├── routes/               # API routes
-│   ├── middleware/           # Auth middleware
-│   ├── lib/                  # DB and utility code
-│   ├── package.json          # Backend dependencies
-│   ├── .env                  # Local backend env
-│   └── server.js             # Express entry point
-│
-├── Dockerfile                # Docker build for production
-├── docker-compose.yaml       # Local container configuration
-├── .dockerignore             # Files excluded from Docker build context
-├── .gitignore                # Root Git ignore file
-├── README.md                 # Project documentation
-├── .DS_Store                 # Ignored OS metadata file
-└── .env.example              # Optional example env file
+├── client/
+│   ├── context/
+│   ├── public/
+│   ├── src/
+│   ├── package.json
+│   ├── vite.config.js
+│   └── .env
+├── server/
+│   ├── config/
+│   ├── controllers/
+│   ├── lib/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── package.json
+│   ├── server.js
+│   └── .env
+├── Dockerfile
+├── docker-compose.yaml
+├── README.md
+├── .gitignore
+├── .dockerignore
+└── package-lock.json
 ```
 
 ## Available Scripts
 
 ### Client
-- `npm run dev` - Start the React development server
-- `npm run build` - Build the production frontend
-- `npm run lint` - Run ESLint
+- `npm run dev` — start the frontend in development mode
+- `npm run build` — create a production build
+- `npm run lint` — run ESLint
 
 ### Server
-- `npm run server` - Start the backend with nodemon
-- `npm start` - Start the production server
+- `npm run server` — start the backend with nodemon
+- `npm start` — run the production server
 
-## Contributing
+## Notes
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+- The app includes both local fallback logic and Gemini-powered AI responses.
+- If `GEMINI_API_KEY` is not provided, the AI assistant and summarization features still work with built-in local responses.
+- The codebase is organized to make future expansion easier, such as adding notifications, search, or richer media handling.
 
 ## License
 

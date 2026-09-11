@@ -43,10 +43,10 @@ const RightSideBar = () => {
   };
 
   return activeChat && (
-    <div className={`bg-[#1d2d3f]/80 text-white w-full h-full flex flex-col border-l border-white/10 ${activeChat ? "max-md:hidden" : ""}`}>
+    <div className={`relative bg-[#1d2d3f]/80 text-white w-full h-full flex flex-col border-l border-white/10 ${activeChat ? "max-md:hidden" : ""}`}>
       <div className='flex-1 overflow-y-auto px-5 pb-28'>
         <div className='pt-16 flex flex-col items-center gap-2 text-xs mx-auto'>
-          <img src={activeChat?.profilePic || assets.avatar_icon} alt="" className='w-20 aspect-[1/1] rounded-full' />
+          <img src={activeChat?.profilePic || assets.avatar_icon} alt="" className='w-20 aspect-square rounded-full' />
           <h1 className='px-10 text-xl font-medium flex items-center gap-2'>
             {chatType === 'single' && onlineUsers.includes(activeChat._id) && <p className='bg-green-500 rounded-full w-2 h-2'></p>}
             {activeChat.fullName || activeChat.name}
@@ -115,7 +115,7 @@ const RightSideBar = () => {
           {chatType === 'group' && (
             <button
               onClick={() => leaveGroup(selectedGroup._id)}
-              className='flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-sm font-light text-white py-2 px-4 rounded-full border-none cursor-pointer'
+              className='flex-1 bg-linear-to-r from-red-500 to-pink-500 text-sm font-light text-white py-2 px-4 rounded-full border-none cursor-pointer'
             >
               Leave Group
             </button>
@@ -123,7 +123,7 @@ const RightSideBar = () => {
 
           <button
             onClick={logout}
-            className='flex-1 bg-gradient-to-r from-blue-400 to-violet-600 text-sm font-light text-white py-2 px-4 rounded-full border-none cursor-pointer'
+            className='flex-1 bg-linear-to-r from-blue-400 to-violet-600 text-sm font-light text-white py-2 px-4 rounded-full border-none cursor-pointer'
           >
             Logout
           </button>

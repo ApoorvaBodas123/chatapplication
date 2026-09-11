@@ -1,16 +1,45 @@
-# React + Vite
+# Client App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This folder contains the React frontend for the real-time chat application.
 
-Currently, two official plugins are available:
+## Frontend Highlights
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Modern chat dashboard UI
+- Real-time updates through Socket.IO
+- Group and one-to-one messaging flows
+- Online presence indicators
+- Typing indicator and read receipt rendering
+- AI assistant and chat summary actions
+- Responsive layout for desktop and smaller screens
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- Vite
+- Tailwind CSS
+- Axios
+- React Router
+- Socket.IO Client
 
-## Expanding the ESLint configuration
+## Run locally
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev
+```
+
+## Build for production
+
+```bash
+npm run build
+```
+
+## Environment variable
+
+Create a `.env` file in this folder with:
+
+```env
+VITE_BACKEND_URL=http://localhost:5000
+```
+
+This frontend is designed to work alongside the Express backend in the `server/` folder.
