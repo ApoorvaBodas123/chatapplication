@@ -3,18 +3,32 @@ import "dotenv/config";
 import cors from "cors";
 import http from "http";
 import mongoose from "mongoose";
+import cookieParser from "cookie-parser";
 import { connectDB } from "./lib/db.js";
 import userRouter from "./routes/user.routes.js";
 import messageRouter from "./routes/message.route.js";
 import { Server } from "socket.io";
+import path from "path"
 
 const PORT = process.env.PORT || 5000;
 
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = process.env.NODE_ENV === "production" 
-  ? [process.env.FRONTEND_URL, /https:\/\/.*\.vercel\.app$/]
+const normalizeFrontendOrigin = () => {
+  if (!process.env.FRONTEND_URL) return null;
+
+  try {
+    return new URL(process.env.FRONTEND_URL).origin;
+  } catch {
+    return process.env.FRONTEND_URL.replace(/\/+$/, "");
+  }
+};
+
+const frontendOrigin = normalizeFrontendOrigin();
+
+const allowedOrigins = process.env.NODE_ENV === "production"
+  ? [frontendOrigin, /https:\/\/.*\.vercel\.app$/, /https:\/\/.*\.onrender\.com$/].filter(Boolean)
   : ["http://localhost:5173"];
 
 export const io = new Server(server, {
@@ -47,6 +61,7 @@ io.on("connection", (socket) => {
 
 // Express Middlewares
 app.use(express.json({ limit: "4mb" }));
+app.use(cookieParser());
 app.use(
   cors({
     origin: allowedOrigins,
@@ -88,6 +103,17 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
+const __dirname=path.resolve();
+
+if(process.env.NODE_ENV==="production")
+{
+    app.use(express.static(path.join(__dirname,"public")))
+
+    app.get("*",(req,res)=>{
+      res.sendFile(path.join(__dirname,"public","index.html"))
+    })
+}
 
 startServer();
 

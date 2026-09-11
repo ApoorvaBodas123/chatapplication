@@ -8,7 +8,7 @@ const Sidebar = () => {
 
   const {getUsers,users,selectedUser,setSelectedUser,unseenMessages,setUnseenMessages}=useContext(ChatContext);
 
-  const { logout ,onlineUsers } = useContext(AuthContext);
+  const { logout ,logoutAll, onlineUsers } = useContext(AuthContext);
 
   const [input,setInput]=useState(false);
 
@@ -34,13 +34,16 @@ const Sidebar = () => {
           <div className="relative py-2 group">
             <img src={assets.menu_icon} alt="menu" className="max-h-5 cursor-pointer"/>
            
-              <div onClick={() => navigate('/profile')} className="absolute top-full right-0 z-20 w-32 p-5 rounded-md bg-[#032130] border border-gray-600 text-gray-100 hidden group-hover:block">
+              <div onClick={() => navigate('/profile')} className="absolute top-full right-0 z-20 w-40 p-5 rounded-md bg-[#032130] border border-gray-600 text-gray-100 hidden group-hover:block">
                 <p className="cursor-pointer text-sm">
                   Edit Profile
                 </p>
                 <hr className="my-2 border-t border-gray-500" />
                 <p onClick={() => logout()} className="cursor-pointer text-sm">
                   Logout
+                </p>
+                <p onClick={() => logoutAll()} className="cursor-pointer text-sm text-red-400">
+                  Logout All Devices
                 </p>
               </div>
            </div>

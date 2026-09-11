@@ -1,0 +1,14 @@
+services:
+  chatapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: chatapp_monolith
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env
+    environment:
+      PORT: 5000
+      NODE_ENV: production
