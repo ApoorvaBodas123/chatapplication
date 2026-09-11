@@ -57,12 +57,8 @@ const getGeminiReply = async (prompt, messages = []) => {
 
     try {
         const contents = [
-            {
-                role: 'user',
-                parts: [{ text: 'You are a helpful chat assistant helping with messaging app conversations.' }]
-            },
             ...messages.slice(-10).map((message) => ({
-                role: message.senderId ? 'user' : 'model',
+                role: 'user',
                 parts: [{ text: message.text || '[media message]' }]
             })),
             {
@@ -72,21 +68,33 @@ const getGeminiReply = async (prompt, messages = []) => {
         ];
 
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
             {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ contents }),
+                body: JSON.stringify({
+                    systemInstruction: {
+                        parts: [{
+                            text: 'You are a helpful chat assistant helping with messaging app conversations.'
+                        }]
+                    },
+                    contents,
+                    generationConfig: {
+                        temperature: 0.7
+                    }
+                }),
             }
         );
 
+        const data = await response.json().catch(() => ({}));
+
         if (!response.ok) {
+            console.error('Gemini API error:', response.status, JSON.stringify(data, null, 2));
             return null;
         }
 
-        const data = await response.json();
         return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
     } catch (error) {
         console.error('Gemini request failed:', error.message);
