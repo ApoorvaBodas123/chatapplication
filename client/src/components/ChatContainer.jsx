@@ -206,7 +206,7 @@ const ChatContainer = () => {
   }, [input, socket, activeChat, chatType]);
 
   return activeChat ? (
-    <div className='h-full overflow-hidden relative bg-[#0d1a28]/50'>
+    <div className='h-full flex flex-col overflow-hidden relative bg-[#0d1a28]/50'>
       <div className='flex text-white items-center gap-3 py-3 mx-4 border-b border-white/10'>
         <img src={activeChat.profilePic || assets.avatar_icon} className='w-8 rounded-full' />
         <p className='flex-1 text-lg flex items-center gap-2'>
@@ -223,7 +223,7 @@ const ChatContainer = () => {
         <img src={assets.help_icon} className='max-md:hidden max-w-5' />
       </div>
 
-      <div className='flex flex-col h-[calc(100%-120px)] overflow-y-auto p-3 pb-6'>
+      <div className='flex-1 min-h-0 overflow-y-auto p-3 pb-6'>
         {summaryText && (
           <div className='mb-3 rounded-xl border border-violet-400/40 bg-violet-500/10 p-3 text-xs text-gray-100'>
             <p className='mb-1 font-medium text-violet-200'>Chat Summary</p>
@@ -287,7 +287,7 @@ const ChatContainer = () => {
         <div ref={scrollEnd}></div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 p-3 border-t border-white/10 bg-[#0d1a28]/80 backdrop-blur-sm">
+      <div className="flex items-center gap-2 p-3 border-t border-white/10 bg-[#0d1a28]/80 backdrop-blur-sm">
         <div className='flex-1 flex items-center bg-white/5 px-3 rounded-full border border-white/10'>
           <input
             onChange={(e) => setInput(e.target.value)}
